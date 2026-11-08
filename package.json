@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "dist": "node --test && vite build && node scripts/dist-summary.mjs",
     "preview": "vite preview",
     "test": "node --test"
   },

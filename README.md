@@ -19,7 +19,7 @@ npm run dev
 Hra se otevře v prohlížeči na adrese `http://localhost:5173`.
 
 Další příkazy:
-- `npm run build` – produkční build do složky `dist/` (statické soubory, lze nahrát kamkoli)
+- `npm run dist` – otestuje a sestaví web k nasazení do složky `dist/` (viz Nasazení)
 - `npm run preview` – náhled produkčního buildu
 - `npm test` – testy herní logiky
 
@@ -28,19 +28,33 @@ Další příkazy:
 - Týmy Červení a Modří se střídají
 - **Vyhrává**, kdo jako první propojí svými poli všechny tři strany trojúhelníku
 - Obsazená (červená/modrá) pole už nejde změnit
-- Po kliknutí na hexagon se zobrazí otázka
-- **Správně** = pole v barvě hráče, tah přechází na soupeře
-- **Špatně** = šedé pole, tah přechází na soupeře  
-- **Soupeř správně** = pole v barvě soupeře, hráč hraje znovu
+- Po kliknutí na pole se zobrazí otázka
+- **Správně** = pole v barvě týmu na tahu, hraje soupeř
+- **Špatně** = šedé pole, hraje soupeř
+- **Soupeř správně** = pole v barvě soupeře, tým na tahu hraje znovu
 - Na šedé pole lze kliknout znovu a získat novou otázku
 - Otázky se neopakují; když dojdou (nebo se zaplní pole), rozhoduje počet obsazených polí
 - Tlačítko „Nová hra“ hru kdykoli restartuje
+
+## Nasazení
+
+```bash
+npm install     # jen poprvé
+npm run dist
+```
+
+Příkaz spustí testy (včetně kontroly `otazky.csv`) a sestaví hotový web do složky `dist/`.
+Na web pak stačí nahrát **celý obsah** složky `dist/` – jsou to jen statické soubory
+(HTML, JS, CSS, `otazky.csv`, `ministrant.png`), žádný server ani databáze nejsou potřeba.
+Hra funguje v kořeni domény i v podsložce (např. `https://example.com/kviz/`).
+
+Složka `dist/` se necommituje do gitu – po každé změně (třeba otázek) ji vytvořte znovu.
 
 ## Otázky
 
 Otázky jsou v souboru `public/otazky.csv`, který se nasazuje spolu s hrou
 (137 ministrantských pojmů). Pro změnu otázek stačí upravit tento soubor
-(např. v LibreOffice/Excelu, uložit jako CSV v UTF-8 se středníkem) a hru znovu nasadit (`npm run build`).
+(např. v LibreOffice/Excelu, uložit jako CSV v UTF-8 se středníkem) a hru znovu nasadit (`npm run dist`).
 
 Formát – jeden řádek = jedna otázka, sloupce oddělené středníkem:
 
@@ -58,7 +72,7 @@ delší modlitba v misálu, jejíž součástí je proměňování;Eucharistick�
 
 ## Stránka pro správce hry
 
-Na adrese `…/#spravce` (např. `https://example.com/hexagon/#spravce`) je očíslovaný
+Na adrese `…/#spravce` (např. `https://example.com/kviz/#spravce`) je očíslovaný
 seznam všech otázek a odpovědí s vyhledáváním podle čísla nebo textu. Správce si ji může
 otevřít na mobilu a podle čísla zobrazeného ve hře rychle najít správnou odpověď.
 
@@ -78,6 +92,8 @@ catholic-hexagon-game/
 │   ├── Admin.jsx       # Stránka pro správce (#spravce)
 │   ├── game.js         # Herní logika: pole, výhra, načtení otázek
 │   └── index.css       # Styly (barvy jsou proměnné v :root nahoře)
+├── scripts/
+│   └── dist-summary.mjs # Výpis obsahu dist/ po `npm run dist`
 ├── test/
 │   └── game.test.js    # Testy herní logiky (node --test)
 ├── vite.config.js
@@ -86,4 +102,5 @@ catholic-hexagon-game/
 
 ## Technologie
 
-- React 18 + Vite
+- React 18 + Vite, bez serveru a databáze (čistě statický web)
+- Testy: vestavěný `node --test`
