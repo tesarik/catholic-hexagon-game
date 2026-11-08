@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ROWS,
   buildBoard,
@@ -6,27 +6,8 @@ import {
   isBoardFull,
   countColors,
   pickQuestionIndex,
-  parseQuestionsFile,
+  loadQuestions,
 } from './game.js';
-
-// Výchozí ukázkové otázky (dokud se nenahraje vlastní soubor)
-const DEFAULT_QUESTIONS = [
-  {
-    fullText: 'Je Země kulatá?',
-    answer: 'Ano, Země má přibližně kulovitý tvar.',
-    displayText: 'Je Země kulatá?',
-  },
-  {
-    fullText: 'Je voda mokrá?',
-    answer: 'Ano, voda je mokrá.',
-    displayText: 'Je voda mokrá?',
-  },
-  {
-    fullText: 'Má trojúhelník čtyři strany?',
-    answer: 'Ne, trojúhelník má tři strany.',
-    displayText: 'Má trojúhelník čtyři strany?',
-  },
-];
 
 const COLORS = { red: '#ff4444', blue: '#4444ff', gray: '#999999', empty: '#ffffff' };
 const PLAYER_NAMES = { red: 'Červený', blue: 'Modrý' };
@@ -60,12 +41,18 @@ const HexagonGame = () => {
   const [currentPlayer, setCurrentPlayer] = useState('red');
   const [currentHexagon, setCurrentHexagon] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(null);
-  const [questions, setQuestions] = useState(null); // null = výchozí otázky
+  const [questions, setQuestions] = useState(null); // null = načítá se
+  const [loadError, setLoadError] = useState(null);
   const [usedQuestions, setUsedQuestions] = useState(new Set());
   const [gameOver, setGameOver] = useState(null); // { reason, winner, path, counts }
-  const [notice, setNotice] = useState(null); // { type: 'ok' | 'error', text }
 
-  const questionPool = questions ?? DEFAULT_QUESTIONS;
+  useEffect(() => {
+    loadQuestions()
+      .then(({ questions: loaded }) => setQuestions(loaded))
+      .catch((error) => setLoadError(error.message));
+  }, []);
+
+  const questionPool = questions ?? [];
   const counts = countColors(hexagonColors);
   const remainingQuestions = questionPool.length - usedQuestions.size;
   const winningPath = new Set(gameOver?.path ?? []);
@@ -81,37 +68,8 @@ const HexagonGame = () => {
     setGameOver(null);
   };
 
-  // Nahrání otázek vždy začne novou hru
-  const handleFileUpload = (event) => {
-    const input = event.target;
-    const file = input.files[0];
-    input.value = ''; // aby šel stejný soubor nahrát znovu
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const { questions: loaded, skipped } = parseQuestionsFile(file.name, e.target.result);
-        setQuestions(loaded);
-        startNewGame();
-        setNotice({
-          type: 'ok',
-          text:
-            `✓ Nahráno ${loaded.length} otázek` +
-            (skipped ? ` (přeskočeno ${skipped} neplatných nebo duplicitních)` : '') +
-            '. Začíná nová hra.',
-        });
-      } catch (error) {
-        setNotice({ type: 'error', text: `Chyba při načítání souboru: ${error.message}` });
-      }
-    };
-    reader.onerror = () =>
-      setNotice({ type: 'error', text: 'Soubor se nepodařilo přečíst.' });
-    reader.readAsText(file);
-  };
-
   const handleHexagonClick = (hexId) => {
-    if (gameOver || currentHexagon !== null) return;
+    if (!questions || gameOver || currentHexagon !== null) return;
 
     // Obsazená pole (červená/modrá) jsou definitivní
     const hexColor = hexagonColors.get(hexId);
@@ -166,24 +124,16 @@ const HexagonGame = () => {
       <div className="subtitle">Strategická hra</div>
 
       <div className="toolbar">
-        <label className="tool-button">
-          📁 Nahrát otázky
-          <input
-            type="file"
-            accept=".json,.csv"
-            onChange={handleFileUpload}
-            style={{ display: 'none' }}
-          />
-        </label>
         <button className="tool-button" onClick={startNewGame}>
           ↻ Nová hra
         </button>
       </div>
-      {notice && (
-        <div className={`notice ${notice.type}`} role={notice.type === 'error' ? 'alert' : 'status'}>
-          {notice.text}
+      {loadError && (
+        <div className="notice error" role="alert">
+          {loadError}
         </div>
       )}
+      {!questions && !loadError && <div className="notice">Načítám otázky…</div>}
 
       <div className="turn-indicator" style={{ backgroundColor: gameOver ? '#000000' : COLORS[currentPlayer] }}>
         {gameOver ? 'Konec hry' : `Na tahu: ${PLAYER_NAMES[currentPlayer]}`}
@@ -204,7 +154,7 @@ const HexagonGame = () => {
 
           {HEXAGONS.map((hex, index) => {
             const hexColor = hexagonColors.get(hex.id);
-            const playable = !gameOver && hexColor !== 'red' && hexColor !== 'blue';
+            const playable = !!questions && !gameOver && hexColor !== 'red' && hexColor !== 'blue';
             const inWinningPath = winningPath.has(hex.id);
 
             return (
@@ -259,10 +209,13 @@ const HexagonGame = () => {
               </span>
             </div>
 
-            <div className="question-text">{currentQuestion.displayText}</div>
-            {currentQuestion.fullText !== currentQuestion.displayText && (
-              <div className="question-full">{currentQuestion.fullText}</div>
+            <div className="question-number">Otázka č. {currentQuestion.number}</div>
+            {currentQuestion.letters && (
+              <div className="question-letters" aria-label="Začáteční písmena odpovědi">
+                {currentQuestion.letters}
+              </div>
             )}
+            <div className="question-text">{currentQuestion.fullText}</div>
 
             <details className="answer-details">
               <summary>📖 Zobrazit odpověď</summary>
@@ -364,9 +317,7 @@ const HexagonGame = () => {
         <br />• <strong>Soupeř správně</strong> = pole v barvě soupeře, hráč hraje znovu
         <br />• Na <strong>šedé pole</strong> lze kliknout znovu a získat novou otázku
         <br />• Otázky se <strong>neopakují</strong> – když dojdou, rozhoduje počet polí
-        <br />
-        <br />
-        <em>Nahrajte soubor s otázkami (JSON nebo CSV formát) – tím začne nová hra</em>
+
       </div>
     </div>
   );

@@ -8,7 +8,8 @@ import {
   isBoardFull,
   pickQuestionIndex,
   parseCsv,
-  parseQuestionsFile,
+  parseQuestions,
+  loadQuestions,
 } from '../src/game.js';
 
 const colorsOf = (entries) => new Map(entries);
@@ -57,37 +58,48 @@ test('výběr otázky najde i poslední volnou z velkého balíčku', () => {
   assert.equal(pickQuestionIndex(200, used), null);
 });
 
-test('CSV: uvozovky, středník v poli, CRLF, BOM a hlavička', () => {
+test('CSV parser: uvozovky, středník v poli, CRLF', () => {
   assert.deepEqual(parseCsv('a;"b;c";"d ""e"""\r\nx;y;z'), [
     ['a', 'b;c', 'd "e"'],
     ['x', 'y', 'z'],
   ]);
-  const { questions, skipped } = parseQuestionsFile(
-    'q.CSV',
-    '﻿fullText;answer;displayText\nOtázka?;"Ano; jistě.";Krátká?\nBez odpovědi;;\nJen otázka?;Odpověď\n'
+});
+
+test('otázky: hlavička, BOM, neplatné řádky, duplicity a čísla podle pořadí', () => {
+  const { questions, skipped } = parseQuestions(
+    '\uFEFFpopis;odpověď;písmena\r\n' +
+      'budova pro bohoslužbu;Chrám;Ch\r\n' +
+      'budova pro bohoslužbu;Kostel;K\r\n' + // stejný popis, jiná odpověď → platí
+      'budova pro bohoslužbu;Kostel;K\r\n' + // úplná duplicita → přeskočit
+      'bez odpovědi;;X\r\n' +
+      '"popis; se středníkem";Odpověď\r\n'
   );
-  assert.equal(skipped, 1);
-  assert.deepEqual(questions, [
-    { fullText: 'Otázka?', answer: 'Ano; jistě.', displayText: 'Krátká?' },
-    { fullText: 'Jen otázka?', answer: 'Odpověď', displayText: 'Jen otázka?' },
-  ]);
-});
-
-test('JSON: validace a duplicity', () => {
-  assert.throws(() => parseQuestionsFile('q.json', '{"a":1}'), /pole otázek/);
-  assert.throws(() => parseQuestionsFile('q.json', 'nejson'), /platný JSON/);
-  assert.throws(() => parseQuestionsFile('q.json', '[{"fullText":"x"}]'), /žádné platné/);
-  assert.throws(() => parseQuestionsFile('q.txt', ''), /\.json a \.csv/);
-  const q = { fullText: 'X?', answer: 'Y' };
-  const { questions, skipped } = parseQuestionsFile('q.json', JSON.stringify([q, q, null]));
-  assert.equal(questions.length, 1);
   assert.equal(skipped, 2);
+  assert.deepEqual(questions, [
+    { number: 1, fullText: 'budova pro bohoslužbu', answer: 'Chrám', letters: 'Ch' },
+    { number: 2, fullText: 'budova pro bohoslužbu', answer: 'Kostel', letters: 'K' },
+    { number: 3, fullText: 'popis; se středníkem', answer: 'Odpověď', letters: '' },
+  ]);
+  assert.throws(() => parseQuestions('jen;\n;\n'), /žádné platné/);
 });
 
-test('ukázkové soubory se načtou', async () => {
+test('loadQuestions: chyby HTTP a sítě', async () => {
+  await assert.rejects(loadQuestions(async () => ({ ok: false, status: 404 })), /HTTP 404/);
+  await assert.rejects(loadQuestions(async () => { throw new TypeError('offline'); }), /připojení/);
+  const ok = await loadQuestions(async () => ({ ok: true, text: async () => 'A;B;A' }));
+  assert.equal(ok.questions.length, 1);
+});
+
+test('public/otazky.csv: všech 137 otázek je platných', async () => {
   const { readFile } = await import('node:fs/promises');
-  for (const name of ['questions-example.json', 'questions-example.csv']) {
-    const content = await readFile(new URL(`../${name}`, import.meta.url), 'utf8');
-    assert.equal(parseQuestionsFile(name, content).questions.length, 5);
-  }
+  const content = await readFile(new URL('../public/otazky.csv', import.meta.url), 'utf8');
+  const { questions, skipped } = parseQuestions(content);
+  assert.equal(skipped, 0);
+  assert.equal(questions.length, 137);
+  assert.deepEqual(questions[0], {
+    number: 1,
+    fullText: 'stůl v presbytáři, na kterém jsou připraveny věci ke mši svaté',
+    answer: 'Abak',
+    letters: 'A',
+  });
 });

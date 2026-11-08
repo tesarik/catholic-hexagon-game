@@ -34,53 +34,53 @@ Další příkazy:
 - Otázky se neopakují; když dojdou (nebo se zaplní pole), rozhoduje počet obsazených polí
 - Tlačítko „Nová hra“ hru kdykoli restartuje
 
-## Import otázek
+## Otázky
 
-Použijte tlačítko "📁 Nahrát otázky" pro import vlastních otázek. Nahráním souboru začne nová hra.
-Otázky bez otázky nebo odpovědi a duplicity se přeskočí; `displayText` je nepovinný (jinak se použije `fullText`).
+Otázky jsou v souboru `public/otazky.csv`, který se nasazuje spolu s hrou
+(137 ministrantských pojmů). Pro změnu otázek stačí upravit tento soubor
+(např. v LibreOffice/Excelu, uložit jako CSV v UTF-8 se středníkem) a hru znovu nasadit (`npm run build`).
 
-### Podporované formáty:
+Formát – jeden řádek = jedna otázka, sloupce oddělené středníkem:
 
-#### JSON formát
-```json
-[
-  {
-    "fullText": "Plné znění otázky s detaily?",
-    "answer": "Správná odpověď na otázku.",
-    "displayText": "Krátký text otázky?"
-  }
-]
+```
+popis;odpověď;začáteční písmena
+stůl v presbytáři, na kterém jsou připraveny věci ke mši svaté;Abak;A
+delší modlitba v misálu, jejíž součástí je proměňování;Eucharistická modlitba;EM
 ```
 
-#### CSV formát
-Oddělovač středník (;), kódování UTF-8. První řádek může být hlavička (`fullText;answer;displayText`).
-Pole obsahující středník dejte do uvozovek.
-```
-Plné znění otázky?;Správná odpověď;Krátký text?
-Další otázka?;"Odpověď; se středníkem";Krátce?
-```
+- Ve hře se ukáže **popis** a **začáteční písmena** jako nápověda, **odpověď** jde rozbalit.
+- **Číslo otázky = pořadí řádku v souboru** (od 1). Hra ho ukazuje u každé otázky („Otázka č. 7“).
+- Text se středníkem dejte do uvozovek. První řádek může být hlavička (`popis;odpověď;písmena`).
+- Řádky bez popisu nebo odpovědi a úplné duplicity se přeskočí. Stejný popis s jinou odpovědí
+  (např. Chrám / Kostel) je v pořádku – rozliší je písmena.
 
-Ukázkové soubory: `questions-example.json` a `questions-example.csv`
+## Stránka pro správce hry
+
+Na adrese `…/#spravce` (např. `https://example.com/hexagon/#spravce`) je očíslovaný
+seznam všech otázek a odpovědí s vyhledáváním podle čísla nebo textu. Správce si ji může
+otevřít na mobilu a podle čísla zobrazeného ve hře rychle najít správnou odpověď.
+
+> ⚠️ Stránka ani soubor s otázkami nejsou chráněné heslem – kdo zná adresu, může si odpovědi zobrazit.
 
 ## Struktura projektu
 
 ```
 catholic-hexagon-game/
 ├── index.html          # Vstupní HTML (Vite)
+├── public/
+│   └── otazky.csv      # Otázky a odpovědi
 ├── src/
 │   ├── main.jsx        # Entry point
 │   ├── App.jsx         # Komponenta hry (UI)
-│   ├── game.js         # Herní logika: pole, výhra, import otázek
+│   ├── Admin.jsx       # Stránka pro správce (#spravce)
+│   ├── game.js         # Herní logika: pole, výhra, načtení otázek
 │   └── index.css       # Styly
 ├── test/
 │   └── game.test.js    # Testy herní logiky (node --test)
 ├── vite.config.js
-├── package.json
-├── questions-example.json
-└── questions-example.csv
+└── package.json
 ```
 
 ## Technologie
 
 - React 18 + Vite
-- FileReader API pro import otázek

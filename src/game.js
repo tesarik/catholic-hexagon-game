@@ -91,7 +91,11 @@ export function pickQuestionIndex(poolSize, used, random = Math.random) {
   return free[Math.floor(random() * free.length)];
 }
 
-// --- Import otázek -------------------------------------------------------
+// --- Otázky ------------------------------------------------------------
+
+// Otázky jsou v public/otazky.csv: popis;odpověď;začáteční písmena
+// (UTF-8, oddělovač středník, pole se středníkem v uvozovkách).
+export const QUESTIONS_URL = './otazky.csv';
 
 // CSV s oddělovačem ";" a podporou uvozovek ("pole se ; uvnitř", "" = ").
 export function parseCsv(text) {
@@ -130,57 +134,46 @@ export function parseCsv(text) {
   return rows;
 }
 
-const HEADER_NAMES = ['fulltext', 'otázka', 'otazka', 'question'];
+const HEADER_NAMES = ['popis', 'otázka', 'otazka', 'fulltext', 'question'];
 
-function normalizeQuestion(item) {
-  if (!item || typeof item !== 'object') return null;
-  const str = (v) => (typeof v === 'string' || typeof v === 'number' ? String(v).trim() : '');
-  const fullText = str(item.fullText);
-  const answer = str(item.answer);
-  if (!fullText || !answer) return null;
-  return { fullText, answer, displayText: str(item.displayText) || fullText };
-}
-
-// Vrací { questions, skipped }; při nepoužitelném souboru vyhodí Error s českou zprávou.
-export function parseQuestionsFile(fileName, rawContent) {
-  const content = rawContent.replace(/^﻿/, '');
-  const name = fileName.toLowerCase();
-  let items;
-
-  if (name.endsWith('.json')) {
-    let data;
-    try {
-      data = JSON.parse(content);
-    } catch {
-      throw new Error('Soubor není platný JSON.');
-    }
-    if (!Array.isArray(data)) {
-      throw new Error('JSON musí obsahovat pole otázek ([ {…}, {…} ]).');
-    }
-    items = data;
-  } else if (name.endsWith('.csv')) {
-    const rows = parseCsv(content).filter((r) => r.some((f) => f.trim() !== ''));
-    if (rows.length && HEADER_NAMES.includes(rows[0][0].trim().toLowerCase())) rows.shift();
-    items = rows.map(([fullText, answer, displayText]) => ({ fullText, answer, displayText }));
-  } else {
-    throw new Error('Podporované jsou jen soubory .json a .csv.');
-  }
+// Ověří obsah CSV. Vrací { questions, skipped }; při nepoužitelném obsahu
+// vyhodí Error s českou zprávou. Číslo otázky = pořadí v souboru (od 1).
+export function parseQuestions(rawContent) {
+  const rows = parseCsv(rawContent.replace(/^\uFEFF/, '')).filter((r) =>
+    r.some((f) => f.trim() !== '')
+  );
+  if (rows.length && HEADER_NAMES.includes(rows[0][0].trim().toLowerCase())) rows.shift();
 
   const seen = new Set();
   const questions = [];
   let skipped = 0;
-  for (const item of items) {
-    const q = normalizeQuestion(item);
-    if (!q || seen.has(q.fullText)) {
+  for (const row of rows) {
+    const [fullText = '', answer = '', letters = ''] = row.map((f) => f.trim());
+    // Stejný popis může mít víc odpovědí (rozliší je písmena) – duplicita je až celá dvojice.
+    const key = `${fullText}\u0000${answer}`;
+    if (!fullText || !answer || seen.has(key)) {
       skipped++;
       continue;
     }
-    seen.add(q.fullText);
-    questions.push(q);
+    seen.add(key);
+    questions.push({ number: questions.length + 1, fullText, answer, letters });
   }
 
   if (questions.length === 0) {
-    throw new Error('Soubor neobsahuje žádné platné otázky (každá potřebuje otázku a odpověď).');
+    throw new Error('Soubor neobsahuje žádné platné otázky (každá potřebuje popis a odpověď).');
   }
   return { questions, skipped };
+}
+
+export async function loadQuestions(fetchImpl = fetch) {
+  let response;
+  try {
+    response = await fetchImpl(QUESTIONS_URL, { cache: 'no-cache' });
+  } catch {
+    throw new Error('Otázky se nepodařilo stáhnout – zkontrolujte připojení.');
+  }
+  if (!response.ok) {
+    throw new Error(`Soubor s otázkami se nepodařilo načíst (HTTP ${response.status}).`);
+  }
+  return parseQuestions(await response.text());
 }
