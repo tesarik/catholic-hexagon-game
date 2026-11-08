@@ -6,14 +6,328 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background: #ffffff;
+  font-family: 'Space Mono', 'Courier New', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+.title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: clamp(2.2rem, 8vw, 3.5rem);
+  color: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 20px;
+  animation: slideDown 0.8s ease-out;
+}
+
+.subtitle {
+  color: #333333;
+  font-size: 1rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-bottom: 40px;
+  opacity: 0;
+  animation: slideDown 0.8s ease-out 0.3s forwards;
+}
+
+/* --- Nástrojová lišta a hlášky --- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 12px;
+  animation: slideDown 0.8s ease-out 0.35s backwards;
+}
+
+.tool-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background-color: #f5f5f5;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #000000;
+  transition: background-color 0.2s ease;
+}
+
+.tool-button:hover {
+  background-color: #e5e5e5;
+}
+
+.notice {
+  max-width: 500px;
+  margin-bottom: 12px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.notice.ok {
+  color: #2e7d32;
+  background: #e8f5e9;
+}
+
+.notice.error {
+  color: #b71c1c;
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+}
+
+.turn-indicator {
+  margin: 12px 0 32px;
+  padding: 15px 30px;
+  border-radius: 12px;
+  border: 3px solid #000000;
+  color: #ffffff;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  animation: slideDown 0.8s ease-out 0.4s backwards;
+}
+
+/* --- Hrací pole --- */
+
+.board-container {
+  width: 100%;
+  max-width: 600px;
+  background: #fafafa;
+  border-radius: 24px;
+  padding: clamp(12px, 5vw, 50px);
+  border: 2px solid #000000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.8s ease-out 0.5s backwards;
+}
+
+.board {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hex {
+  animation: slideDown 0.5s ease-out backwards;
+  outline: none;
+}
+
+.hex.playable {
+  cursor: pointer;
+}
+
+.hex-path {
+  transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+.hex.playable:hover .hex-path,
+.hex.playable:focus-visible .hex-path {
+  stroke-width: 4;
+}
+
+/* --- Modální okna --- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  background: #ffffff;
+  border: 3px solid #000000;
+  border-radius: 20px;
+  padding: clamp(20px, 5vw, 40px);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  animation: scaleIn 0.3s ease-out;
+}
+
+.question-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #000000;
+  margin-bottom: 20px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.question-full {
+  margin-bottom: 20px;
+  font-size: 0.85rem;
+  color: #666666;
+  line-height: 1.5;
+  text-align: center;
+  font-style: italic;
+}
+
+.answer-details {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #dddddd;
+}
+
+.answer-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #666666;
+  user-select: none;
+}
+
+.answer-box {
+  margin-top: 15px;
+  padding: 12px;
+  background-color: #e8f5e9;
+  border-radius: 6px;
+  border: 1px solid #4caf50;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.answer-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  justify-content: center;
+}
+
+.answer-button {
+  padding: 15px 40px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  border: 3px solid #000000;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.answer-button:hover {
+  transform: scale(1.05);
+}
+
+.answer-button.correct { background-color: #44ff44; color: #000000; }
+.answer-button.correct:hover { background-color: #33dd33; }
+.answer-button.incorrect { background-color: #ff4444; color: #ffffff; }
+.answer-button.incorrect:hover { background-color: #dd3333; }
+.answer-button.opponent { background-color: #ffaa44; color: #000000; }
+.answer-button.opponent:hover { background-color: #ee9933; }
+.answer-button.neutral { background-color: #f5f5f5; color: #000000; }
+.answer-button.neutral:hover { background-color: #e5e5e5; }
+
+.current-player {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 10px 20px;
+  border-radius: 8px;
+  display: inline-block;
+  color: #ffffff;
+}
+
+.current-player.red { background-color: #ff4444; }
+.current-player.blue { background-color: #4444ff; }
+
+.final-score {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 24px;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* --- Info panel a pravidla --- */
+
+.info-panel {
+  background: #f5f5f5;
+  border: 2px solid #000000;
+  border-radius: 16px;
+  padding: 24px 32px;
+  margin-top: 40px;
+  min-width: min(300px, 100%);
+  text-align: center;
+  animation: slideDown 0.8s ease-out 0.6s backwards;
+}
+
+.info-row {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 2px solid #e0e0e0;
+  display: flex;
+  justify-content: space-around;
+  gap: 16px;
+}
+
+.info-label {
+  color: #333333;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.info-value {
+  color: #000000;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.rules {
+  margin-top: 30px;
+  color: #333333;
+  font-size: 0.875rem;
+  text-align: center;
+  max-width: 550px;
+  line-height: 1.6;
+  animation: slideDown 0.8s ease-out 0.8s backwards;
 }
