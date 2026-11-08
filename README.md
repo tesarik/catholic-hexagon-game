@@ -1,6 +1,8 @@
-# Hexagon Game
+# Ministrantský kvíz
 
-Strategická hra s hexagonálním herním polem a otázkami.
+Kvízová hra pro dva týmy (Červení a Modří) na trojúhelníkovém poli z šestiúhelníků.
+Rozložení je určené pro projektor nebo velkou obrazovku: pole přes celou výšku, vpravo panel
+se skóre a ovládáním (Nová hra, Celá obrazovka, Pravidla). Na mobilu se panel přesune nad pole.
 
 ## Instalace a spuštění
 
@@ -23,7 +25,7 @@ Další příkazy:
 
 ## Pravidla hry
 
-- Červený a modrý hráč se střídají
+- Týmy Červení a Modří se střídají
 - **Vyhrává**, kdo jako první propojí svými poli všechny tři strany trojúhelníku
 - Obsazená (červená/modrá) pole už nejde změnit
 - Po kliknutí na hexagon se zobrazí otázka
@@ -68,13 +70,14 @@ otevřít na mobilu a podle čísla zobrazeného ve hře rychle najít správnou
 catholic-hexagon-game/
 ├── index.html          # Vstupní HTML (Vite)
 ├── public/
-│   └── otazky.csv      # Otázky a odpovědi
+│   ├── otazky.csv      # Otázky a odpovědi
+│   └── ministrant.png  # Logo (kresba z letáku ministrantské schůzky)
 ├── src/
 │   ├── main.jsx        # Entry point
 │   ├── App.jsx         # Komponenta hry (UI)
 │   ├── Admin.jsx       # Stránka pro správce (#spravce)
 │   ├── game.js         # Herní logika: pole, výhra, načtení otázek
-│   └── index.css       # Styly
+│   └── index.css       # Styly (barvy jsou proměnné v :root nahoře)
 ├── test/
 │   └── game.test.js    # Testy herní logiky (node --test)
 ├── vite.config.js
