@@ -1,0 +1,27 @@
+[
+  {
+    "fullText": "Jaké je hlavní město České republiky a kdy se stalo oficiálním hlavním městem?",
+    "answer": "Praha je hlavním městem České republiky. Stala se oficiálním hlavním městem v roce 1918, kdy vznikla Československá republika.",
+    "displayText": "Jaké je hlavní město ČR?"
+  },
+  {
+    "fullText": "Kdo napsal román Válka s mloky a v jakém roce byl publikován?",
+    "answer": "Karel Čapek napsal román Válka s mloky, který byl publikován v roce 1936.",
+    "displayText": "Kdo napsal Válku s mloky?"
+  },
+  {
+    "fullText": "Jaká je chemická značka pro kyslík a kolik elektronů má v základním stavu?",
+    "answer": "Chemická značka pro kyslík je O. V základním stavu má kyslík 8 elektronů.",
+    "displayText": "Jaká je značka kyslíku?"
+  },
+  {
+    "fullText": "Kolik planet je ve sluneční soustavě a která je největší?",
+    "answer": "Ve sluneční soustavě je 8 planet (Merkur, Venuše, Země, Mars, Jupiter, Saturn, Uran, Neptun). Největší planetou je Jupiter.",
+    "displayText": "Kolik je planet ve sluneční soustavě?"
+  },
+  {
+    "fullText": "Kdy začala a kdy skončila první světová válka?",
+    "answer": "První světová válka začala 28. července 1914 a skončila 11. listopadu 1918.",
+    "displayText": "Kdy začala první světová válka?"
+  }
+]
