@@ -221,6 +221,11 @@ const HexagonGame = () => {
             <span aria-hidden="true">?</span> Pravidla
           </button>
         </nav>
+
+        {/* Nová karta, aby se rozehraná hra neztratila */}
+        <a className="admin-link" href="#spravce" target="_blank" rel="noopener">
+          Stránka správce ↗
+        </a>
       </aside>
 
       <main className="board-area">
