@@ -262,8 +262,7 @@ button {
 }
 
 .btn:focus-visible,
-.answer-button:focus-visible,
-.hex:focus-visible {
+.answer-button:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: 2px;
 }
@@ -288,13 +287,6 @@ button {
   filter: drop-shadow(0 4px 10px rgba(59, 47, 37, 0.12));
 }
 
-.board-side {
-  stroke: var(--gold);
-  stroke-width: 7;
-  stroke-linecap: round;
-  opacity: 0.75;
-}
-
 .hex {
   animation: fadeIn 0.4s ease-out backwards;
   outline: none;
@@ -316,18 +308,21 @@ button {
 .hex.blue .hex-path { fill: var(--blue); }
 .hex.gray .hex-path { fill: var(--gray); }
 
-.hex.playable:hover .hex-path,
-.hex.playable:focus-visible .hex-path {
-  stroke: var(--gold);
-  stroke-width: 5;
-}
-
-.hex.empty.playable:hover .hex-path {
+.hex.empty.playable:hover .hex-path,
+.hex.empty.playable:focus-visible .hex-path {
   fill: #fbf3dc;
 }
 
-.hex.win .hex-path {
+/* Zlatý rámeček (hover/fokus, vítězná cesta) se kreslí ve vrstvě nad všemi poli */
+.hex-highlight {
+  fill: none;
   stroke: var(--gold);
+  stroke-width: 5;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.hex-highlight.win {
   stroke-width: 6;
 }
 

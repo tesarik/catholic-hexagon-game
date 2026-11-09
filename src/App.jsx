@@ -18,8 +18,6 @@ const other = (player) => (player === 'red' ? 'blue' : 'red');
 const HEX_SIZE = 40; // poloměr (střed → vrchol)
 const HEX_WIDTH = Math.sqrt(3) * HEX_SIZE; // vodorovný rozestup středů
 const ROW_STEP = 1.5 * HEX_SIZE; // svislý rozestup řad
-const SIDE_OFFSET = HEX_SIZE + 12; // jak daleko od středů krajních polí vede čára strany
-const SIDE_GAP = 0.14; // podíl délky strany vynechaný u každého rohu
 const MARGIN = 12;
 
 const rawHexagons = buildBoard(ROWS).map((cell) => ({
@@ -28,43 +26,13 @@ const rawHexagons = buildBoard(ROWS).map((cell) => ({
   y: cell.row * ROW_STEP,
 }));
 
-// Tři strany trojúhelníku: zvětšený trojúhelník středů krajních polí,
-// každá strana zkrácená u rohů, aby byly vidět jako tři samostatné čáry.
-const corners = (() => {
-  const top = { x: 0, y: 0 };
-  const left = { x: (-(ROWS - 1) / 2) * HEX_WIDTH, y: (ROWS - 1) * ROW_STEP };
-  const right = { x: ((ROWS - 1) / 2) * HEX_WIDTH, y: (ROWS - 1) * ROW_STEP };
-  const c = { x: 0, y: (2 / 3) * (ROWS - 1) * ROW_STEP }; // těžiště
-  const inradius = ((ROWS - 1) * HEX_WIDTH) / (2 * Math.sqrt(3));
-  const k = (inradius + SIDE_OFFSET) / inradius;
-  const grow = (p) => ({ x: c.x + (p.x - c.x) * k, y: c.y + (p.y - c.y) * k });
-  return { top: grow(top), left: grow(left), right: grow(right) };
-})();
-
-const sideSegment = (a, b) => ({
-  x1: a.x + (b.x - a.x) * SIDE_GAP,
-  y1: a.y + (b.y - a.y) * SIDE_GAP,
-  x2: b.x + (a.x - b.x) * SIDE_GAP,
-  y2: b.y + (a.y - b.y) * SIDE_GAP,
-});
-
-const rawSides = [
-  { key: 'left', ...sideSegment(corners.top, corners.left) },
-  { key: 'right', ...sideSegment(corners.top, corners.right) },
-  { key: 'bottom', ...sideSegment(corners.left, corners.right) },
-];
-
-// Rozměry viewBoxu podle všech polí a čar stran
+// Rozměry viewBoxu podle všech polí
 const bounds = (() => {
   const xs = [];
   const ys = [];
   rawHexagons.forEach(({ x, y }) => {
     xs.push(x - HEX_WIDTH / 2, x + HEX_WIDTH / 2);
     ys.push(y - HEX_SIZE, y + HEX_SIZE);
-  });
-  rawSides.forEach(({ x1, y1, x2, y2 }) => {
-    xs.push(x1, x2);
-    ys.push(y1, y2);
   });
   return {
     minX: Math.min(...xs) - MARGIN,
@@ -117,6 +85,7 @@ const HexagonGame = () => {
   const [usedQuestions, setUsedQuestions] = useState(new Set());
   const [gameOver, setGameOver] = useState(null); // { reason, winner, path, counts, dismissed }
   const [showRules, setShowRules] = useState(false);
+  const [highlightedHex, setHighlightedHex] = useState(null); // pole pod myší / s fokusem
   const [isFullscreen, toggleFullscreen] = useFullscreen();
 
   useEffect(() => {
@@ -256,10 +225,6 @@ const HexagonGame = () => {
 
       <main className="board-area">
         <svg viewBox={VIEW_BOX} className="board" role="group" aria-label="Hrací pole">
-          {rawSides.map(({ key, x1, y1, x2, y2 }) => (
-            <line key={key} className="board-side" x1={x1} y1={y1} x2={x2} y2={y2} />
-          ))}
-
           {rawHexagons.map((hex, index) => {
             const hexColor = hexagonColors.get(hex.id);
             const playable =
@@ -278,6 +243,10 @@ const HexagonGame = () => {
                 key={hex.id}
                 className={classes}
                 onClick={() => handleHexagonClick(hex.id)}
+                onMouseEnter={() => setHighlightedHex(hex.id)}
+                onMouseLeave={() => setHighlightedHex((h) => (h === hex.id ? null : h))}
+                onFocus={() => setHighlightedHex(hex.id)}
+                onBlur={() => setHighlightedHex((h) => (h === hex.id ? null : h))}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -289,13 +258,41 @@ const HexagonGame = () => {
                 aria-label={`Pole ${hex.id}`}
                 style={{ animationDelay: `${index * 0.015}s` }}
               >
-                <path className="hex-path" d={hexagonPath(hex.x, hex.y, HEX_SIZE - 1)} />
+                <path className="hex-path" d={hexagonPath(hex.x, hex.y, HEX_SIZE)} />
                 <text className="hex-label" x={hex.x} y={hex.y}>
                   {hex.id}
                 </text>
               </g>
             );
           })}
+
+          {/* Zlaté rámečky až nad všemi poli, aby je nepřekryly okraje sousedů */}
+          <g className="hex-highlights" aria-hidden="true">
+            {rawHexagons
+              .filter((hex) => winningPath.has(hex.id))
+              .map((hex) => (
+                <path
+                  key={`win-${hex.id}`}
+                  className="hex-highlight win"
+                  d={hexagonPath(hex.x, hex.y, HEX_SIZE)}
+                />
+              ))}
+            {highlightedHex !== null &&
+              !winningPath.has(highlightedHex) &&
+              rawHexagons
+                .filter((hex) => hex.id === highlightedHex)
+                .filter((hex) => {
+                  const color = hexagonColors.get(hex.id);
+                  return !!questions && !gameOver && color !== 'red' && color !== 'blue';
+                })
+                .map((hex) => (
+                  <path
+                    key={`hover-${hex.id}`}
+                    className="hex-highlight"
+                    d={hexagonPath(hex.x, hex.y, HEX_SIZE)}
+                  />
+                ))}
+          </g>
         </svg>
       </main>
 
